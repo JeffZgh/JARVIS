@@ -6,6 +6,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Requ
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import json
 import os
@@ -90,11 +91,393 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files from web interface
-app.mount("/static", web_interface.get_static_files(), name="static")
+# Note: Web interface routes removed to avoid Jinja2 template issues
+# The chat interface is now served directly via HTML response
 
-# Setup web interface routes
-web_interface.setup_routes(app)
+
+@app.get("/")
+async def root():
+    """Root endpoint - serve chat interface"""
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>JARVIS Agent</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            
+            .chat-container {
+                width: 90%;
+                max-width: 800px;
+                height: 90vh;
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            
+            .chat-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px;
+                text-align: center;
+                font-size: 1.5em;
+                font-weight: bold;
+            }
+            
+            .chat-messages {
+                flex: 1;
+                padding: 20px;
+                overflow-y: auto;
+                background: #f8f9fa;
+            }
+            
+            .message {
+                margin-bottom: 15px;
+                display: flex;
+                align-items: flex-start;
+            }
+            
+            .message.user {
+                justify-content: flex-end;
+            }
+            
+            .message.assistant {
+                justify-content: flex-start;
+            }
+            
+            .message-content {
+                max-width: 70%;
+                padding: 12px 16px;
+                border-radius: 18px;
+                word-wrap: break-word;
+            }
+            
+            .message.user .message-content {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-bottom-right-radius: 4px;
+            }
+            
+            .message.assistant .message-content {
+                background: white;
+                color: #333;
+                border: 1px solid #e9ecef;
+                border-bottom-left-radius: 4px;
+            }
+            
+            .message-time {
+                font-size: 0.8em;
+                color: #666;
+                margin-top: 5px;
+            }
+            
+            .chat-input {
+                padding: 20px;
+                background: white;
+                border-top: 1px solid #e9ecef;
+                display: flex;
+                gap: 10px;
+            }
+            
+            .input-field {
+                flex: 1;
+                padding: 12px 16px;
+                border: 2px solid #e9ecef;
+                border-radius: 25px;
+                font-size: 16px;
+                outline: none;
+                transition: border-color 0.3s;
+            }
+            
+            .input-field:focus {
+                border-color: #667eea;
+            }
+            
+            .send-button {
+                padding: 12px 24px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 25px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: transform 0.2s;
+            }
+            
+            .send-button:hover {
+                transform: scale(1.05);
+            }
+            
+            .send-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: scale(1);
+            }
+            
+            .status-indicator {
+                padding: 10px;
+                text-align: center;
+                font-size: 0.9em;
+                color: #666;
+                background: #f8f9fa;
+                border-bottom: 1px solid #e9ecef;
+            }
+            
+            .status-indicator.connected {
+                color: #28a745;
+            }
+            
+            .status-indicator.connecting {
+                color: #ffc107;
+            }
+            
+            .status-indicator.error {
+                color: #dc3545;
+            }
+            
+            .typing-indicator {
+                font-style: italic;
+                color: #666;
+                padding: 10px 20px;
+            }
+            
+            .clear-button {
+                padding: 8px 16px;
+                background: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 15px;
+                font-size: 12px;
+                cursor: pointer;
+                margin-left: 10px;
+            }
+            
+            .session-info {
+                font-size: 0.8em;
+                color: #666;
+                margin-left: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="chat-container">
+            <div class="chat-header">
+                🤖 JARVIS Agent
+                <button class="clear-button" onclick="clearHistory()">Clear</button>
+                <span class="session-info" id="sessionInfo"></span>
+            </div>
+            
+            <div class="status-indicator" id="statusIndicator">
+                Connecting...
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-content">
+                        Hello! I'm JARVIS, your AI assistant. How can I help you today?
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input">
+                <input type="text" class="input-field" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                <button class="send-button" id="sendButton" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <script>
+            let ws = null;
+            let sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+            let isConnected = false;
+            
+            // Initialize session
+            document.getElementById('sessionInfo').textContent = 'Session: ' + sessionId;
+            
+            // Connect WebSocket
+            function connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/${sessionId}`;
+                
+                updateStatus('Connecting...', 'connecting');
+                
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = function() {
+                    isConnected = true;
+                    updateStatus('Connected', 'connected');
+                    document.getElementById('sendButton').disabled = false;
+                };
+                
+                ws.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+                
+                ws.onclose = function() {
+                    isConnected = false;
+                    updateStatus('Disconnected', 'error');
+                    document.getElementById('sendButton').disabled = true;
+                    
+                    // Try to reconnect after 3 seconds
+                    setTimeout(connectWebSocket, 3000);
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    updateStatus('Connection error', 'error');
+                };
+            }
+            
+            function handleWebSocketMessage(data) {
+                if (data.type === 'message') {
+                    addMessage('assistant', data.response);
+                } else if (data.type === 'typing') {
+                    if (data.status === 'started') {
+                        showTypingIndicator();
+                    } else {
+                        hideTypingIndicator();
+                    }
+                } else if (data.type === 'error') {
+                    addMessage('assistant', 'Error: ' + data.message);
+                }
+            }
+            
+            function updateStatus(message, className) {
+                const indicator = document.getElementById('statusIndicator');
+                indicator.textContent = message;
+                indicator.className = 'status-indicator ' + className;
+            }
+            
+            function addMessage(type, content) {
+                const messagesContainer = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = content;
+                
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'message-time';
+                timeDiv.textContent = new Date().toLocaleTimeString();
+                
+                messageDiv.appendChild(contentDiv);
+                messageDiv.appendChild(timeDiv);
+                messagesContainer.appendChild(messageDiv);
+                
+                // Scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            function showTypingIndicator() {
+                hideTypingIndicator();
+                const messagesContainer = document.getElementById('chatMessages');
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'typing-indicator';
+                typingDiv.id = 'typingIndicator';
+                typingDiv.textContent = 'JARVIS is typing...';
+                messagesContainer.appendChild(typingDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            function hideTypingIndicator() {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+            
+            function sendMessage() {
+                const input = document.getElementById('messageInput');
+                const message = input.value.trim();
+                
+                if (message && isConnected) {
+                    // Add user message to chat
+                    addMessage('user', message);
+                    
+                    // Send via WebSocket
+                    ws.send(JSON.stringify({
+                        message: message,
+                        message_type: 'text'
+                    }));
+                    
+                    // Clear input
+                    input.value = '';
+                    
+                    // Disable send button temporarily
+                    document.getElementById('sendButton').disabled = true;
+                }
+            }
+            
+            function handleKeyPress(event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            }
+            
+            function clearHistory() {
+                if (confirm('Are you sure you want to clear the chat history?')) {
+                    const messagesContainer = document.getElementById('chatMessages');
+                    messagesContainer.innerHTML = `
+                        <div class="message assistant">
+                            <div class="message-content">
+                                Hello! I'm JARVIS, your AI assistant. How can I help you today?
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Initialize connection
+            connectWebSocket();
+            
+            // Fallback to HTTP API if WebSocket fails
+            async function sendMessageViaAPI(message) {
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            session_id: sessionId
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    addMessage('assistant', data.response);
+                } catch (error) {
+                    addMessage('assistant', 'Error: ' + error.message);
+                } finally {
+                    document.getElementById('sendButton').disabled = false;
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 
 @app.get("/api")
@@ -253,6 +636,59 @@ async def get_full_config():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get config: {str(e)}")
+
+
+@app.websocket("/ws/{session_id}")
+async def websocket_endpoint(websocket: WebSocket, session_id: str):
+    """WebSocket endpoint for real-time chat"""
+    await websocket.accept()
+    
+    try:
+        agent = get_agent()
+        memory = get_session_memory(session_id)
+        
+        while True:
+            # Receive message from client
+            data = await websocket.receive_json()
+            message = data.get("message", "")
+            message_type = data.get("message_type", "text")
+            
+            if not message:
+                continue
+            
+            # Send typing indicator
+            await websocket.send_json({
+                "type": "typing",
+                "status": "started"
+            })
+            
+            # Temporarily switch agent's memory for this session
+            original_memory = agent.memory
+            agent.memory = memory
+            
+            try:
+                # Get response from agent
+                response = await agent.chat(message, message_type)
+                
+                # Send response
+                await websocket.send_json({
+                    "type": "message",
+                    "response": response,
+                    "session_id": session_id,
+                    "timestamp": str(memory.events[-1].timestamp.isoformat()) if memory.events else ""
+                })
+                
+            finally:
+                # Restore original memory
+                agent.memory = original_memory
+                
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        await websocket.send_json({
+            "type": "error",
+            "message": str(e)
+        })
 
 
 if __name__ == "__main__":

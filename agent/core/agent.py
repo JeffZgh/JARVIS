@@ -20,16 +20,11 @@ class JarvisAgent:
         if llm_config:
             config.update_llm_config(**llm_config)
         
-        # Create agent with configurable settings
+        # Create agent with basic settings
+        # Note: LLM parameters are handled through the Runner, not Agent constructor
         self.agent = Agent(
             name=config.agent_name,
-            instructions=self._get_instructions(),
-            model=config.llm.model,
-            temperature=config.llm.temperature,
-            max_tokens=config.llm.max_tokens,
-            top_p=config.llm.top_p,
-            frequency_penalty=config.llm.frequency_penalty,
-            presence_penalty=config.llm.presence_penalty
+            instructions=self._get_instructions()
         )
     
     def _get_instructions(self) -> str:
@@ -58,15 +53,10 @@ class JarvisAgent:
         config.update_llm_config(**kwargs)
         
         # Recreate agent with new settings
+        # Note: LLM parameters are handled through the Runner, not Agent constructor
         self.agent = Agent(
             name=config.agent_name,
-            instructions=self._get_instructions(),
-            model=config.llm.model,
-            temperature=config.llm.temperature,
-            max_tokens=config.llm.max_tokens,
-            top_p=config.llm.top_p,
-            frequency_penalty=config.llm.frequency_penalty,
-            presence_penalty=config.llm.presence_penalty
+            instructions=self._get_instructions()
         )
     
     def get_current_settings(self) -> Dict[str, Any]:
@@ -84,48 +74,54 @@ class JarvisAgent:
     async def chat(self, message: str, message_type: str = "text") -> str:
         """Send a message to the agent and get response"""
         try:
-            # Add user message to comprehensive memory
             self.memory.add_user_message(content=message, message_type=message_type)
             
             # Build comprehensive context
             conversation_context = self.memory.build_context_string()
             
-            # Add system event for processing start
-            self.memory.add_system_event(
-                event_name="message_processing",
-                description=f"Processing user message: {message[:50]}..."
-            )
+            # Create full prompt with context
+            full_prompt = f"{conversation_context}\n\nUser: {message}\nAssistant: "
             
-            result = await Runner.run(
-                self.agent,
-                conversation_context + "\n\nCurrent User Message: " + message
-            )
+            # Use simple Runner without LLM parameters for now
+            # The OpenAI Agents SDK handles LLM configuration differently
+            result = await Runner.run(self.agent, input=full_prompt)
             
-            response = result.final_output
+            # Extract response - handle RunResult object properly
+            if hasattr(result, 'output'):
+                response = result.output
+            elif hasattr(result, 'final_output'):
+                response = result.final_output
+            elif hasattr(result, 'result'):
+                response = result.result
+            else:
+                # If it's a RunResult object, extract the actual text
+                response_str = str(result)
+                if "Final output (str):" in response_str:
+                    # Extract the actual response from RunResult string
+                    start = response_str.find("Final output (str):") + len("Final output (str):")
+                    end = response_str.find("\n", start)
+                    if end == -1:
+                        end = len(response_str)
+                    response = response_str[start:end].strip()
+                else:
+                    response = response_str
             
             # Add assistant response to memory
             self.memory.add_assistant_message(content=response)
             
-            # Check if any tools were called and add them to memory
+            # Check if result contains tool calls and add them to memory
             if hasattr(result, 'tool_calls') and result.tool_calls:
                 for tool_call in result.tool_calls:
                     self.memory.add_tool_call(
-                        tool_name=tool_call.name,
-                        tool_args=tool_call.arguments,
-                        tool_result=getattr(tool_call, 'result', None),
-                        success=getattr(tool_call, 'success', True)
+                        tool_name=tool_call.function.name,
+                        arguments=tool_call.function.arguments,
+                        result=str(result.tool_results.get(tool_call.id, "No result"))
                     )
             
-            # Add system event for processing complete
-            self.memory.add_system_event(
-                event_name="message_processed",
-                description="Message processing completed successfully",
-                severity="info"
-            )
-            
             return response
+            
         except Exception as e:
-            # Add error event to memory
+            # Add system event to memory
             self.memory.add_system_event(
                 event_name="message_processing_error",
                 description=f"Error processing message: {str(e)}",

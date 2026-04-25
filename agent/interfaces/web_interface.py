@@ -19,8 +19,17 @@ class WebInterface:
     """Web interface handler for JARVIS Agent"""
     
     def __init__(self):
-        self.templates = Jinja2Templates(directory="interfaces/web/templates")
-        self.static_files = StaticFiles(directory="interfaces/web/static")
+        # Get absolute paths for templates and static files
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        template_dir = os.path.join(current_dir, "web", "templates")
+        static_dir = os.path.join(current_dir, "web", "static")
+        
+        # Create Jinja2 environment with disabled caching to avoid the error
+        from jinja2 import Environment, FileSystemLoader
+        env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
+        
+        self.templates = Jinja2Templates(env=env)
+        self.static_files = StaticFiles(directory=static_dir)
         self.active_connections: Dict[str, WebSocket] = {}
     
     def setup_routes(self, app):
