@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS Agent - Chat Interface</title>
+    <link rel="stylesheet" href="/static/css/chat.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <h1>🤖 JARVIS Assistant</h1>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span class="status-text">Connected</span>
+            </div>
+        </div>
+        
+        <!-- Messages Container -->
+        <div class="chat-messages">
+            <!-- Welcome message will be added here by JavaScript -->
+        </div>
+        
+        <!-- Typing Indicator -->
+        <div class="typing-indicator">
+            <div class="message-avatar">J</div>
+            <div class="typing-content">
+                <span>JARVIS is typing</span>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Input Area -->
+        <div class="chat-input">
+            <div class="input-container">
+                <textarea 
+                    class="message-input" 
+                    placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
+                    rows="1"
+                ></textarea>
+                <button class="send-button" disabled>
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Session Info -->
+        <div class="session-info">
+            <div>
+                <span>Session: </span>
+                <span class="session-id">Loading...</span>
+                <span> | </span>
+                <span class="message-count">0 messages</span>
+            </div>
+            <button class="clear-history-btn">Clear History</button>
+        </div>
+    </div>
+    
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>
