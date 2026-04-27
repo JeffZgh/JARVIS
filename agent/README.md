@@ -22,7 +22,43 @@ A modular, extensible AI agent system with web interface, comprehensive conversa
 pip install -r requirements.txt
 ```
 
-### 2. Set Environment Variables
+### 2. Configure API Keys
+
+**Option A: Create .env file (Recommended)**
+
+Create a `.env` file in the agent directory:
+
+```bash
+# OpenAI Configuration (Required)
+OPENAI_API_KEY=your-openai-api-key-here
+LLM_MODEL=gpt-4o-mini
+LLM_TEMPERATURE=0.7
+LLM_MAX_TOKENS=2000
+
+# Google Nest Configuration (Optional)
+GOOGLE_NEST_ACCESS_TOKEN=your-nest-access-token
+GOOGLE_NEST_PROJECT_ID=your-google-project-id
+GOOGLE_NEST_DEVICE_ID=your-nest-device-id
+GOOGLE_NEST_CLIENT_ID=your-google-client-id
+GOOGLE_NEST_CLIENT_SECRET=your-google-client-secret
+
+# Server Configuration
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+DEBUG=false
+
+# Memory Configuration
+MAX_CONVERSATION_HISTORY=100
+CONTEXT_WINDOW_SIZE=4000
+CONVERSATION_TIMEOUT=300
+
+# Agent Configuration
+AGENT_NAME=JARVIS Assistant
+ENABLE_GUARDRAILS=true
+DEFAULT_PERMISSION_LEVEL=read
+```
+
+**Option B: Use Environment Variables**
 
 ```bash
 # Required: OpenAI API Key
@@ -33,10 +69,20 @@ export LLM_MODEL="gpt-4o-mini"
 export LLM_TEMPERATURE="0.7"
 export LLM_MAX_TOKENS="2000"
 
-# Optional: Agent Configuration
-export AGENT_NAME="JARVIS Assistant"
-export MAX_CONVERSATION_HISTORY="100"
+# Optional: Google Nest (for temperature reading)
+export GOOGLE_NEST_ACCESS_TOKEN="your-nest-access-token"
+export GOOGLE_NEST_PROJECT_ID="your-google-project-id"
+export GOOGLE_NEST_DEVICE_ID="your-nest-device-id"
 ```
+
+**Quick Setup Script**
+
+For interactive setup, run:
+```bash
+python3 quick_setup.py
+```
+
+This will guide you through configuring all API keys and settings.
 
 ### 3. Run the Server
 
@@ -196,6 +242,50 @@ black .
 flake8 agent/
 ```
 
+## API Key Configuration
+
+### Where to Store Your Keys
+
+Your API keys are handled in the following ways:
+
+1. **.env file** (Recommended)
+   - Create `.env` in the agent directory
+   - Paste your keys there
+   - Automatically loaded by the application
+   - Already gitignored for security
+
+2. **Environment Variables**
+   - Set in your shell before running
+   - Good for temporary use
+   - Must be set each time you start
+
+3. **Quick Setup Script**
+   - Run `python3 quick_setup.py`
+   - Interactive configuration
+   - Creates `.env` file automatically
+
+### Required API Keys
+
+#### OpenAI (Required)
+- **API Key**: Get from [OpenAI Platform](https://platform.openai.com/api-keys)
+- **Purpose**: Core AI functionality
+- **Environment Variable**: `OPENAI_API_KEY`
+
+#### Google Nest (Optional)
+- **Access Token**: OAuth 2.0 token from Google
+- **Project ID**: Google Cloud Project ID
+- **Device ID**: Your Nest thermostat device ID
+- **Client ID/Secret**: OAuth credentials
+- **Purpose**: Read room temperature
+- **Setup Guide**: See `GOOGLE_NEST_SETUP.md`
+
+### Security Notes
+
+- ✅ `.env` file is already in `.gitignore`
+- ✅ Never commit API keys to version control
+- ✅ Use different keys for development/production
+- ✅ Rotate keys regularly for security
+
 ## Troubleshooting
 
 ### Common Issues
@@ -206,8 +296,14 @@ flake8 agent/
    ```
 
 2. **API Key Issues**
-   - Ensure `OPENAI_API_KEY` is set correctly
+   - Ensure `OPENAI_API_KEY` is set correctly in `.env`
    - Check if the key has sufficient credits
+   - Verify the key starts with "sk-"
+
+3. **Google Nest Issues**
+   - Follow `GOOGLE_NEST_SETUP.md` for detailed setup
+   - Check OAuth token expiration
+   - Verify device permissions in Google Home
 
 3. **Port Already in Use**
    ```bash

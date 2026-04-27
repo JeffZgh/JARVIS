@@ -3,6 +3,12 @@ key
 *.key
 *.pem
 *.p12
+.env
+config.json
+secrets/
+*.env
+*.env.*
+config/
 
 # Python
 __pycache__/

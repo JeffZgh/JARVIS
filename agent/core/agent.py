@@ -4,6 +4,7 @@ from agents import Agent, Runner
 from typing import Optional, Dict, Any
 from .memory import ConversationMemory, UserMessage, AssistantMessage, ToolCall, SystemEvent
 from .config import config
+from ..tools.tool_registry import tool_registry
 
 
 class JarvisAgent:
@@ -36,6 +37,11 @@ class JarvisAgent:
         - Able to assist with various tasks
         - Clear and concise in your responses
         - You maintain context from previous messages in the conversation
+        
+        You have access to tools that can help you provide more useful information:
+        - google_nest: Read room temperature from Google Nest thermostat
+        
+        When users ask about room temperature, weather, or thermostat information, use the google_nest tool to get current data.
         
         Help users with their questions and tasks to the best of your ability.
         """
@@ -71,16 +77,45 @@ class JarvisAgent:
             "timeout": config.llm.timeout
         }
     
+    async def execute_tool_if_needed(self, message: str) -> Optional[str]:
+        """Execute tools if the message requires it"""
+        message_lower = message.lower()
+        
+        # Check if user is asking about temperature
+        if any(keyword in message_lower for keyword in [
+            "temperature", "temp", "thermostat", "room temperature", 
+            "how hot", "how cold", "what's the temperature", "nest"
+        ]):
+            try:
+                result = await tool_registry.execute_tool("google_nest")
+                if result["success"]:
+                    return result["data"]["current_temperature_fahrenheit"]
+                else:
+                    return None
+            except Exception:
+                return None
+        
+        return None
+    
     async def chat(self, message: str, message_type: str = "text") -> str:
         """Send a message to the agent and get response"""
         try:
             self.memory.add_user_message(content=message, message_type=message_type)
             
+            # Check if we need to execute any tools
+            tool_result = await self.execute_tool_if_needed(message)
+            
             # Build comprehensive context
             conversation_context = self.memory.build_context_string()
             
-            # Create full prompt with context
-            full_prompt = f"{conversation_context}\n\nUser: {message}\nAssistant: "
+            # Add tool result to context if available
+            if tool_result:
+                tool_context = f"\n\nCurrent room temperature: {tool_result}°F"
+            else:
+                tool_context = ""
+            
+            # Create full prompt with context and tool results
+            full_prompt = f"{conversation_context}{tool_context}\n\nUser: {message}\nAssistant: "
             
             # Use simple Runner without LLM parameters for now
             # The OpenAI Agents SDK handles LLM configuration differently
