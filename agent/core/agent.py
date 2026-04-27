@@ -89,7 +89,11 @@ class JarvisAgent:
             try:
                 result = await tool_registry.execute_tool("google_nest")
                 if result["success"]:
-                    return result["data"]["current_temperature_fahrenheit"]
+                    # Get the temperature summary for all thermostats
+                    nest_tool = tool_registry.get_tool("google_nest")
+                    if nest_tool:
+                        summary = await nest_tool.get_temperature_summary()
+                        return summary
                 else:
                     return None
             except Exception:

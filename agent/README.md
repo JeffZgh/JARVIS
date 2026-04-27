@@ -36,9 +36,9 @@ LLM_TEMPERATURE=0.7
 LLM_MAX_TOKENS=2000
 
 # Google Nest Configuration (Optional)
+# Auto-discovery finds all thermostats - no device ID needed!
 GOOGLE_NEST_ACCESS_TOKEN=your-nest-access-token
 GOOGLE_NEST_PROJECT_ID=your-google-project-id
-GOOGLE_NEST_DEVICE_ID=your-nest-device-id
 GOOGLE_NEST_CLIENT_ID=your-google-client-id
 GOOGLE_NEST_CLIENT_SECRET=your-google-client-secret
 
@@ -70,9 +70,9 @@ export LLM_TEMPERATURE="0.7"
 export LLM_MAX_TOKENS="2000"
 
 # Optional: Google Nest (for temperature reading)
+# Auto-discovery finds all thermostats automatically
 export GOOGLE_NEST_ACCESS_TOKEN="your-nest-access-token"
 export GOOGLE_NEST_PROJECT_ID="your-google-project-id"
-export GOOGLE_NEST_DEVICE_ID="your-nest-device-id"
 ```
 
 **Quick Setup Script**
@@ -273,10 +273,10 @@ Your API keys are handled in the following ways:
 
 #### Google Nest (Optional)
 - **Access Token**: OAuth 2.0 token from Google
-- **Project ID**: Google Cloud Project ID
-- **Device ID**: Your Nest thermostat device ID
+- **Project ID**: Google Cloud Project ID  
 - **Client ID/Secret**: OAuth credentials
-- **Purpose**: Read room temperature
+- **Purpose**: Read room temperature from ALL thermostats
+- **Auto-Discovery**: Finds all thermostats automatically
 - **Setup Guide**: See `GOOGLE_NEST_SETUP.md`
 
 ### Security Notes

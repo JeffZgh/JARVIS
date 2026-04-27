@@ -82,6 +82,8 @@ class JARVISConfigurator:
         """Setup Google Nest configuration"""
         print("\n🏠 Google Nest Configuration")
         print("-" * 35)
+        print("Auto-discovery finds ALL thermostats automatically!")
+        print("No device ID needed - works with unlimited thermostats!")
         print("See GOOGLE_NEST_SETUP.md for detailed instructions")
         print()
         
@@ -94,11 +96,6 @@ class JARVISConfigurator:
         project_id = self.get_input_with_default(
             "Enter Google Project ID", 
             os.getenv("GOOGLE_NEST_PROJECT_ID", "")
-        )
-        
-        device_id = self.get_input_with_default(
-            "Enter Nest Device ID", 
-            os.getenv("GOOGLE_NEST_DEVICE_ID", "")
         )
         
         client_id = self.get_input_with_default(
@@ -116,7 +113,6 @@ class JARVISConfigurator:
         return {
             "GOOGLE_NEST_ACCESS_TOKEN": access_token,
             "GOOGLE_NEST_PROJECT_ID": project_id,
-            "GOOGLE_NEST_DEVICE_ID": device_id,
             "GOOGLE_NEST_CLIENT_ID": client_id,
             "GOOGLE_NEST_CLIENT_SECRET": client_secret
         }
@@ -189,6 +185,7 @@ class JARVISConfigurator:
                     f.write(f"{key}={value}\n")
             
             f.write("\n# Google Nest Configuration\n")
+            f.write("# Auto-discovery finds all thermostats automatically\n")
             for key, value in config.items():
                 if key.startswith("GOOGLE_NEST_"):
                     f.write(f"{key}={value}\n")
@@ -217,9 +214,9 @@ class JARVISConfigurator:
             "google_nest": {
                 "access_token": config.get("GOOGLE_NEST_ACCESS_TOKEN", ""),
                 "project_id": config.get("GOOGLE_NEST_PROJECT_ID", ""),
-                "device_id": config.get("GOOGLE_NEST_DEVICE_ID", ""),
                 "client_id": config.get("GOOGLE_NEST_CLIENT_ID", ""),
-                "client_secret": config.get("GOOGLE_NEST_CLIENT_SECRET", "")
+                "client_secret": config.get("GOOGLE_NEST_CLIENT_SECRET", ""),
+                "auto_discovery": True
             },
             "server": {
                 "host": config.get("SERVER_HOST", "0.0.0.0"),

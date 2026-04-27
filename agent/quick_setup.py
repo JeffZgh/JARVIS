@@ -65,6 +65,7 @@ def setup_env_file():
     
     print("\n🏠 Google Nest Configuration (Optional)")
     print("-" * 40)
+    print("Auto-discovery finds ALL thermostats automatically!")
     print("See GOOGLE_NEST_SETUP.md for detailed instructions")
     print("Press Enter to skip if not using Google Nest")
     print()
@@ -80,9 +81,16 @@ def setup_env_file():
         os.getenv("GOOGLE_NEST_PROJECT_ID", "")
     )
     
-    nest_device = get_input_with_default(
-        "Enter Nest Device ID", 
-        os.getenv("GOOGLE_NEST_DEVICE_ID", "")
+    nest_client_id = get_input_with_default(
+        "Enter Google Client ID", 
+        os.getenv("GOOGLE_NEST_CLIENT_ID", ""),
+        is_secret=True
+    )
+    
+    nest_client_secret = get_input_with_default(
+        "Enter Google Client Secret", 
+        os.getenv("GOOGLE_NEST_CLIENT_SECRET", ""),
+        is_secret=True
     )
     
     print("\n🌐 Server Configuration")
@@ -114,9 +122,11 @@ LLM_PRESENCE_PENALTY=0.0
 LLM_TIMEOUT=60
 
 # Google Nest Configuration (Optional)
+# Auto-discovery finds all thermostats automatically
 GOOGLE_NEST_ACCESS_TOKEN={nest_token}
 GOOGLE_NEST_PROJECT_ID={nest_project}
-GOOGLE_NEST_DEVICE_ID={nest_device}
+GOOGLE_NEST_CLIENT_ID={nest_client_id}
+GOOGLE_NEST_CLIENT_SECRET={nest_client_secret}
 
 # Server Configuration
 SERVER_HOST={host}
@@ -166,7 +176,10 @@ def validate_setup():
     
     # Check Google Nest (optional)
     if "GOOGLE_NEST_ACCESS_TOKEN=" in env_content and len(env_content.split("GOOGLE_NEST_ACCESS_TOKEN=")[1].split("\n")[0]) > 10:
-        print("✅ Google Nest configured")
+        if "GOOGLE_NEST_PROJECT_ID=" in env_content and len(env_content.split("GOOGLE_NEST_PROJECT_ID=")[1].split("\n")[0]) > 0:
+            print("✅ Google Nest configured with auto-discovery")
+        else:
+            print("⚠️  Google Nest access token found but missing project ID")
     else:
         print("⚠️  Google Nest not configured (optional)")
     
